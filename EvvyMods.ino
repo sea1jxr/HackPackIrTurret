@@ -1,39 +1,17 @@
-/*
+#define PASSCODE_LENGTH 4
+#define CORRECT_PASSCODE "1234" // Change this to your desired passcode
 
-************************************************************************************
-* MIT License
-*
-* Copyright (c) 2023 Crunchlabs LLC (IRTurret Control Code)
-* Copyright (c) 2020-2022 Armin Joachimsmeyer (IRremote Library)
-
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is furnished
-* to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-* INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-* PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-* CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-* OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*
-************************************************************************************
-*/
+char passcode[PASSCODE_LENGTH + 1] = ""; // Buffer to store user input passcode
+bool passcodeEntered = false; // Flag to indicate if passcode has been entered correctly
+bool inSentryMode = false;
 
 //////////////////////////////////////////////////
-              //  LIBRARIES  //
+                //  LIBRARIES  //
 //////////////////////////////////////////////////
 #include <Arduino.h>
 #include <Servo.h>
 #include "PinDefinitionsAndMore.h" // Define macros for input and output pin etc.
 #include <IRremote.hpp>
-
 
 #define DECODE_NEC  //defines the type of IR transmission to decode based on the remote. See IRremote library for examples on how to decode other types of remote
 
@@ -68,17 +46,23 @@
 //////////////////////////////////////////////////
           //  PINS AND PARAMETERS  //
 //////////////////////////////////////////////////
-//this is where we store global variables!
 Servo yawServo; //names the servo responsible for YAW rotation, 360 spin around the base
 Servo pitchServo; //names the servo responsible for PITCH rotation, up and down tilt
 Servo rollServo; //names the servo responsible for ROLL rotation, spins the barrel to fire darts
 
-int yawServoVal; //initialize variables to store the current value of each servo
-int pitchServoVal = 100;
-int rollServoVal;
 
-int pitchMoveSpeed = 8; //this variable is the angle added to the pitch servo to control how quickly the PITCH servo moves - try values between 3 and 10
-int yawMoveSpeed = 90; //this variable is the speed controller for the continuous movement of the YAW servo motor. It is added or subtracted from the yawStopSpeed, so 0 would mean full speed rotation in one direction, and 180 means full rotation in the other. Try values between 10 and 90;
+ //initialize variables to store the current value of each servo
+ int yawServoVal = 90;
+int pitchServoVal = 100;
+int rollServoVal = 90;
+
+//initialize variables to store the last value of each servo
+int lastYawServoVal = 90; 
+int lastPitchServoVal = 90; 
+int lastRollServoVal = 90;
+
+int pitchMoveSpeed = 3; //this variable is the angle added to the pitch servo to control how quickly the PITCH servo moves - try values between 3 and 10
+int yawMoveSpeed = 50; //this variable is the speed controller for the continuous movement of the YAW servo motor. It is added or subtracted from the yawStopSpeed, so 0 would mean full speed rotation in one direction, and 180 means full rotation in the other. Try values between 10 and 90;
 int yawStopSpeed = 90; //value to stop the yaw motor - keep this at 90
 int rollMoveSpeed = 90; //this variable is the speed controller for the continuous movement of the ROLL servo motor. It is added or subtracted from the rollStopSpeed, so 0 would mean full speed rotation in one direction, and 180 means full rotation in the other. Keep this at 90 for best performance / highest torque from the roll motor when firing.
 int rollStopSpeed = 90; //value to stop the roll motor - keep this at 90
@@ -89,9 +73,11 @@ int rollPrecision = 158; // this variable represents the time in milliseconds th
 int pitchMax = 175; // this sets the maximum angle of the pitch servo to prevent it from crashing, it should remain below 180, and be greater than the pitchMin
 int pitchMin = 10; // this sets the minimum angle of the pitch servo to prevent it from crashing, it should remain above 0, and be less than the pitchMax
 
+int trigPin = 8;    // Trigger
+int echoPin = 7;    // Echo
 
 //////////////////////////////////////////////////
-              //  S E T U P  //
+                //  S E T U P  //
 //////////////////////////////////////////////////
 void setup() {
     Serial.begin(9600); // initializes the Serial communication between the computer and the microcontroller
@@ -99,6 +85,10 @@ void setup() {
     yawServo.attach(10); //attach YAW servo to pin 10
     pitchServo.attach(11); //attach PITCH servo to pin 11
     rollServo.attach(12); //attach ROLL servo to pin 12
+
+    //Define inputs and outputs
+    pinMode(trigPin, OUTPUT);
+    pinMode(echoPin, INPUT);
 
     // Just to know which program is running on my microcontroller
     Serial.println(F("START " __FILE__ " from " __DATE__ "\r\nUsing library version " VERSION_IRREMOTE));
@@ -115,70 +105,236 @@ void setup() {
 }
 
 ////////////////////////////////////////////////
-              //  L O O P  //
+                //  L O O P  //
 ////////////////////////////////////////////////
 
+int loopCount = 0;
 void loop() {
+    loopCount++;
 
-    /*
-    * Check if received data is available and if yes, try to decode it.
-    */
-    if (IrReceiver.decode()) {
-
-        /*
-        * Print a short summary of received data
-        */
-        IrReceiver.printIRResultShort(&Serial);
-        IrReceiver.printIRSendUsage(&Serial);
-        if (IrReceiver.decodedIRData.protocol == UNKNOWN) { //command garbled or not recognized
-            Serial.println(F("Received noise or an unknown (or not yet enabled) protocol - if you wish to add this command, define it at the top of the file with the hex code printed below (ex: 0x8)"));
-            // We have an unknown protocol here, print more info
-            IrReceiver.printIRResultRawFormatted(&Serial, true);
-        }
-        Serial.println();
-
-        /*
-        * !!!Important!!! Enable receiving of the next value,
-        * since receiving has stopped after the end of the current received data packet.
-        */
+    if (IrReceiver.decode()) { //if we have recieved a comman this loop...
+        int command = IrReceiver.decodedIRData.command; //store it in a variable
         IrReceiver.resume(); // Enable receiving of the next value
-
-
-        /*
-        * Finally, check the received data and perform actions according to the received command
-        */
-
-        switch(IrReceiver.decodedIRData.command){ //this is where the commands are handled
-
-            case up://pitch up
-              upMove(1);
-              break;
-            
-            case down://pitch down
-              downMove(1);
-              break;
-
-            case left://fast counterclockwise rotation
-              leftMove(1);
-              break;
-            
-            case right://fast clockwise rotation
-              rightMove(1);
-              break;
-            
-            case ok: //firing routine 
-              fire();
-              //Serial.println("FIRE");
-              break;
-              
-            case star:
-              fireAll();
-              delay(50);
-              break;
-
-        }
+        handleCommand(command); // Handle the received command through switch statements
     }
-    delay(5);
+
+    if (inSentryMode && loopCount % 50 == 0) {
+      long inchesToTarget = getDistanceInInches();
+
+      if (inchesToTarget < 30) {
+          fire();
+      }
+    }
+
+
+
+    delay(5); //delay for smoothness
+}
+
+float getDistanceInInches() {
+
+    long durationInMicroseconds;
+    float inches;
+
+    // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
+    // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    
+    delayMicroseconds(60);
+    // Read the signal from the sensor: a HIGH pulse whose
+    // duration is the time (in microseconds) from the sending
+    // of the ping to the reception of its echo off of an object.
+    durationInMicroseconds = pulseIn(echoPin, HIGH);
+
+    if (durationInMicroseconds == 0) {
+      return 1000;
+    }
+    
+    // Convert the time into a distance
+    //cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
+    const float speedOfSoundIninchesPerMicrosecond = 0.0135;
+    inches = (durationInMicroseconds * speedOfSoundIninchesPerMicrosecond) / 2.0;   // Divide by 74 or multiply by 0.0135
+    
+    Serial.print(inches);
+    Serial.print("in ");
+    //Serial.print(cm);
+    //Serial.print("cm");
+    Serial.println();
+
+    return inches;
+}
+
+void checkPasscode() {
+    if (strcmp(passcode, CORRECT_PASSCODE) == 0) {
+        // Correct passcode entered, shake head yes
+        Serial.println("CORRECT PASSCODE");
+        passcodeEntered = true;
+        shakeHeadYes();
+    } else {
+        // Incorrect passcode entered, shake head no
+        passcodeEntered = false;
+        shakeHeadNo();
+        Serial.println("INCORRECT PASSCODE");
+    }
+    passcode[0] = '\0'; // Reset passcode buffer
+}
+
+
+
+void addPasscodeDigit(char digit) {
+    if (!passcodeEntered && digit >= '0' && digit <= '9' && strlen(passcode) < PASSCODE_LENGTH) {
+        strncat(passcode, &digit, 1); //adds a digit to the passcode
+        Serial.println(passcode); //print the passcode to Serial
+    } else if (strlen(passcode) > PASSCODE_LENGTH+1){
+      passcode[0] = NULL; // Reset passcode buffer
+      Serial.println(passcode);
+    }
+}
+
+void handleCommand(int command) {
+    if((IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT) && !passcodeEntered){ // this checks to see if the command is a repeat
+    Serial.println("DEBOUNCING REPEATED NUMBER - IGNORING INPUT");
+    return; //discarding the repeated numbers prevent you from accidentally inputting a number twice
+    }
+
+    switch (command) {
+        case up:
+            if (passcodeEntered) {
+                // Handle up command
+                upMove(1);
+            } else {
+                shakeHeadNo();
+            }
+            break;
+
+        case down:
+            if (passcodeEntered) {
+                // Handle down command
+                downMove(1);
+            } else {
+                shakeHeadNo();
+            }
+            break;
+
+        case left:
+            if (passcodeEntered) {
+                // Handle left command
+                leftMove(1);
+            } else {
+                shakeHeadNo();
+            }
+            break;
+
+        case right:
+            if (passcodeEntered) {
+              // Handle right command
+              rightMove(1);
+            } else {
+                shakeHeadNo();
+            }
+            break;
+
+        case ok:
+            if (passcodeEntered) {
+                // Handle fire command
+                fire();
+                Serial.println("FIRE");
+            } else {
+                shakeHeadNo();
+            }
+            break;
+
+        case hashtag:
+            Serial.println("LOCKING");
+            // Return to locked mode
+            passcodeEntered = false;
+            passcode[0] = NULL; // Reset passcode buffer
+
+            shakeHeadYes(1);
+
+            break;
+
+        case star: //toggle sentry mode
+            inSentryMode = !inSentryMode;
+            if (inSentryMode) {
+              shakeHeadNo();
+            } else {
+              shakeHeadYes(1);
+            }
+            break;
+            
+        case cmd1: // Add digit 1 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('1');
+            }
+            break;
+
+        case cmd2: // Add digit 2 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('2');
+            }
+            break;
+
+        case cmd3: // Add digit 3 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('3');
+            }
+            break;
+
+        case cmd4: // Add digit 4 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('4');
+            }
+            break;
+
+        case cmd5: // Add digit 5 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('5');
+            }
+            break;
+
+        case cmd6: // Add digit 6 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('6');
+            }
+            break;
+
+        case cmd7: // Add digit 7 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('7');
+            }
+            break;
+
+        case cmd8: // Add digit 8 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('8');
+            }
+            break;
+
+        case cmd9: // Add digit 9 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('9');
+            }
+            break;
+
+        case cmd0: // Add digit 0 to passcode
+            if (!passcodeEntered) {
+                addPasscodeDigit('0');
+            }
+            break;
+
+        default:
+            // Unknown command, do nothing
+            Serial.println("Command Read Failed or Unknown, Try Again");
+            break;
+    }
+    if (strlen(passcode) == PASSCODE_LENGTH){
+        checkPasscode();
+    }
 }
 
 
@@ -266,9 +422,6 @@ void downMove (int moves){
   }
 }
 
-/**
- * fire does xyz
- */
 void fire() { //function for firing a single dart
     rollServo.write(rollStopSpeed + rollMoveSpeed);//start rotating the servo
     delay(rollPrecision);//time for approximately 60 degrees of rotation
@@ -295,4 +448,5 @@ void homeServos(){
     pitchServoVal = 100; // store the pitch servo value
     Serial.println("HOMING");
 }
-   
+
+  
