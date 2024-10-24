@@ -18,7 +18,7 @@ void setup()
     pinMode(echoPin, INPUT);
 
     // Just to know which program is running on my microcontroller
-    Serial.println(F("START " __FILE__ " from " __DATE__ ));
+    Serial.println(F("START " __FILE__ " from " __DATE__ " @ " __TIME__));
 
     InitializeIrReciever();
 
