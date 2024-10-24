@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
 #include "Defines.h"
-#include "EvvyMods.h"
 #include "TurretActions.h"
+#include "IRremote.h"
 
 //////////////////////////////////////////////////
 //  S E T U P  //
