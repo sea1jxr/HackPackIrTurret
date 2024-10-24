@@ -1,63 +1,28 @@
-#define STRING_HELPER(s) #s
-#define STRING(s) STRING_HELPER(s)
 
-#define PASSCODE_LENGTH 4
-#define CORRECT_PASSCODE "1234" // Change this to your desired passcode
+
+
+//////////////////////////////////////////////////
+//  LIBRARIES  //
+//////////////////////////////////////////////////
+#include <Arduino.h>
+
+#include "Defines.h"
+#include "EvvyMods.h"
+#include "IRRemote.h"
+
+#define DECODE_NEC // defines the type of IR transmission to decode based on the remote. See IRremote library for examples on how to decode other types of remote
+
 
 char passcode[PASSCODE_LENGTH + 1] = ""; // Buffer to store user input passcode
 bool passcodeEntered = false;            // Flag to indicate if passcode has been entered correctly
 bool inSentryMode = false;
 
 //////////////////////////////////////////////////
-//  LIBRARIES  //
-//////////////////////////////////////////////////
-#include <Arduino.h>
-#include <Servo.h>
-#include <IRremote.hpp>
-
-#define DECODE_NEC // defines the type of IR transmission to decode based on the remote. See IRremote library for examples on how to decode other types of remote
-
-/*
-** if you want to add other remotes (as long as they're on the same protocol above):
-** press the desired button and look for a hex code similar to those below (ex: 0x11)
-** then add a new line to #define newCmdName 0x11,
-** and add a case to the switch statement like case newCmdName:
-** this will let you add new functions to buttons on other remotes!
-** the best remotes to try are cheap LED remotes, some TV remotes, and some garage door openers
-*/
-
-// defines the specific command code for each button on the remote
-#define left 0x8
-#define right 0x5A
-#define up 0x52
-#define down 0x18
-#define ok 0x1C
-#define cmd1 0x45
-#define cmd2 0x46
-#define cmd3 0x47
-#define cmd4 0x44
-#define cmd5 0x40
-#define cmd6 0x43
-#define cmd7 0x7
-#define cmd8 0x15
-#define cmd9 0x9
-#define cmd0 0x19
-#define star 0x16
-#define hashtag 0xD
-
-#define echoPin 7
-#define trigPin 8
-#define irPin 9
-#define yawPin 10
-#define pitchPin 11
-#define rollPin 12
-
-//////////////////////////////////////////////////
 //  PINS AND PARAMETERS  //
 //////////////////////////////////////////////////
-Servo yawServo;   // names the servo responsible for YAW rotation, 360 spin around the base
-Servo pitchServo; // names the servo responsible for PITCH rotation, up and down tilt
-Servo rollServo;  // names the servo responsible for ROLL rotation, spins the barrel to fire darts
+Servo yawServo;
+Servo pitchServo;
+Servo rollServo;
 
 // initialize variables to store the current value of each servo
 int yawServoVal = 90;
@@ -81,62 +46,21 @@ int rollPrecision = 158; // this variable represents the time in milliseconds th
 int pitchMax = 175; // this sets the maximum angle of the pitch servo to prevent it from crashing, it should remain below 180, and be greater than the pitchMin
 int pitchMin = 10;  // this sets the minimum angle of the pitch servo to prevent it from crashing, it should remain above 0, and be less than the pitchMax
 
-//////////////////////////////////////////////////
-//  S E T U P  //
-//////////////////////////////////////////////////
-void setup()
+void homeServos()
 {
-    Serial.begin(9600); // initializes the Serial communication between the computer and the microcontroller
-
-    yawServo.attach(yawPin);
-    pitchServo.attach(pitchPin);
-    rollServo.attach(rollPin);
-
-    // Define inputs and outputs
-    pinMode(trigPin, OUTPUT);
-    pinMode(echoPin, INPUT);
-
-    // Just to know which program is running on my microcontroller
-    Serial.println(F("START " __FILE__ " from " __DATE__ "\r\nUsing library version " VERSION_IRREMOTE));
-
-    // Start the receiver and if not 3. parameter specified, take LED_BUILTIN pin from the internal boards definition as default feedback LED
-    IrReceiver.begin(irPin, ENABLE_LED_FEEDBACK);
-
-    Serial.print(F("Ready to receive IR signals of protocols: "));
-    printActiveIRProtocols(&Serial);
-    Serial.println(F("at pin " STRING(irPin)));
-
-    homeServos(); // set servo motors to home position
+    yawServo.write(yawStopSpeed); // setup YAW servo to be STOPPED (90)
+    delay(20);
+    rollServo.write(rollStopSpeed); // setup ROLL servo to be STOPPED (90)
+    delay(100);
+    pitchServo.write(100); // set PITCH servo to 100 degree position
+    delay(100);
+    pitchServoVal = 100; // store the pitch servo value
+    Serial.println("HOMING");
 }
 
-////////////////////////////////////////////////
-//  L O O P  //
-////////////////////////////////////////////////
 
-int loopCount = 0;
-void loop()
-{
-    loopCount++;
 
-    if (IrReceiver.decode())
-    {                                                   // if we have recieved a comman this loop...
-        int command = IrReceiver.decodedIRData.command; // store it in a variable
-        IrReceiver.resume();                            // Enable receiving of the next value
-        handleCommand(command);                         // Handle the received command through switch statements
-    }
 
-    if (inSentryMode && loopCount % 50 == 0)
-    {
-        long inchesToTarget = getDistanceInInches();
-
-        if (inchesToTarget < 30)
-        {
-            fire();
-        }
-    }
-
-    delay(5); // delay for smoothness
-}
 
 float getDistanceInInches()
 {
@@ -305,18 +229,6 @@ void fireAll()
     Serial.println("FIRING ALL");
 }
 
-void homeServos()
-{
-    yawServo.write(yawStopSpeed); // setup YAW servo to be STOPPED (90)
-    delay(20);
-    rollServo.write(rollStopSpeed); // setup ROLL servo to be STOPPED (90)
-    delay(100);
-    pitchServo.write(100); // set PITCH servo to 100 degree position
-    delay(100);
-    pitchServoVal = 100; // store the pitch servo value
-    Serial.println("HOMING");
-}
-
 void checkPasscode()
 {
     if (strcmp(passcode, CORRECT_PASSCODE) == 0)
@@ -338,7 +250,7 @@ void checkPasscode()
 
 void handleCommand(int command)
 {
-    if ((IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT) && !passcodeEntered)
+    if (isIrRemoteRepeat() && !passcodeEntered)
     { // this checks to see if the command is a repeat
         Serial.println("DEBOUNCING REPEATED NUMBER - IGNORING INPUT");
         return; // discarding the repeated numbers prevent you from accidentally inputting a number twice
@@ -511,3 +423,5 @@ void handleCommand(int command)
         checkPasscode();
     }
 }
+
+
