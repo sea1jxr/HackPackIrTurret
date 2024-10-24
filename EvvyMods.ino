@@ -151,7 +151,8 @@ float getDistanceInInches() {
     durationInMicroseconds = pulseIn(echoPin, HIGH);
 
     if (durationInMicroseconds == 0) {
-      return 1000;
+        Serial.print("durationInMicroseconds == 0");
+        return 1000;
     }
     
     // Convert the time into a distance
@@ -166,6 +167,127 @@ float getDistanceInInches() {
     Serial.println();
 
     return inches;
+}
+
+void addPasscodeDigit(char digit) {
+    if (!passcodeEntered && digit >= '0' && digit <= '9' && strlen(passcode) < PASSCODE_LENGTH) {
+        strncat(passcode, &digit, 1); //adds a digit to the passcode
+        Serial.println(passcode); //print the passcode to Serial
+    } else if (strlen(passcode) > PASSCODE_LENGTH+1){
+      passcode[0] = NULL; // Reset passcode buffer
+      Serial.println(passcode);
+    }
+}
+
+void shakeHeadYes(int moves = 3) {
+      Serial.println("YES");
+    int startAngle = pitchServoVal; // Current position of the pitch servo
+    int lastAngle = pitchServoVal;
+    int nodAngle = startAngle + 20; // Angle for nodding motion
+
+    for (int i = 0; i < moves; i++) { // Repeat nodding motion three times
+        // Nod up
+        for (int angle = startAngle; angle <= nodAngle; angle++) {
+            pitchServo.write(angle);
+            delay(7); // Adjust delay for smoother motion
+        }
+        delay(50); // Pause at nodding position
+        // Nod down
+        for (int angle = nodAngle; angle >= startAngle; angle--) {
+            pitchServo.write(angle);
+            delay(7); // Adjust delay for smoother motion
+        }
+        delay(50); // Pause at starting position
+    }
+}
+
+void shakeHeadNo(int moves = 3) {
+    Serial.println("NO");
+    int startAngle = pitchServoVal; // Current position of the pitch servo
+    int lastAngle = pitchServoVal;
+    int nodAngle = startAngle + 60; // Angle for nodding motion
+
+    for (int i = 0; i < moves; i++) { // Repeat nodding motion three times
+        // rotate right, stop, then rotate left, stop
+        yawServo.write(140);
+        delay(190); // Adjust delay for smoother motion
+        yawServo.write(yawStopSpeed);
+        delay(50);
+        yawServo.write(40);
+        delay(190); // Adjust delay for smoother motion
+        yawServo.write(yawStopSpeed);
+        delay(50); // Pause at starting position
+    }
+}
+
+void leftMove(int moves){
+    for (int i = 0; i < moves; i++){
+        yawServo.write(yawStopSpeed + yawMoveSpeed); // adding the servo speed = 180 (full counterclockwise rotation speed)
+        delay(yawPrecision); // stay rotating for a certain number of milliseconds
+        yawServo.write(yawStopSpeed); // stop rotating
+        delay(5); //delay for smoothness
+        Serial.println("LEFT");
+  }
+
+}
+
+void rightMove(int moves){ // function to move right
+  for (int i = 0; i < moves; i++){
+      yawServo.write(yawStopSpeed - yawMoveSpeed); //subtracting the servo speed = 0 (full clockwise rotation speed)
+      delay(yawPrecision);
+      yawServo.write(yawStopSpeed);
+      delay(5);
+      Serial.println("RIGHT");
+  }
+}
+
+void upMove(int moves){
+  for (int i = 0; i < moves; i++){
+      if(pitchServoVal > pitchMin){//make sure the servo is within rotation limits (greater than 10 degrees by default)
+        pitchServoVal = pitchServoVal - pitchMoveSpeed; //decrement the current angle and update
+        pitchServo.write(pitchServoVal);
+        delay(50);
+        Serial.println("UP");
+      }
+  }
+}
+
+void downMove (int moves){
+  for (int i = 0; i < moves; i++){
+        if(pitchServoVal < pitchMax){ //make sure the servo is within rotation limits (less than 175 degrees by default)
+        pitchServoVal = pitchServoVal + pitchMoveSpeed;//increment the current angle and update
+        pitchServo.write(pitchServoVal);
+        delay(50);
+        Serial.println("DOWN");
+      }
+  }
+}
+
+void fire() { //function for firing a single dart
+    rollServo.write(rollStopSpeed + rollMoveSpeed);//start rotating the servo
+    delay(rollPrecision);//time for approximately 60 degrees of rotation
+    rollServo.write(rollStopSpeed);//stop rotating the servo
+    delay(5); //delay for smoothness
+    Serial.println("FIRING");
+}
+
+void fireAll() { //function to fire all 6 darts at once
+    rollServo.write(rollStopSpeed + rollMoveSpeed);//start rotating the servo
+    delay(rollPrecision * 6); //time for 360 degrees of rotation
+    rollServo.write(rollStopSpeed);//stop rotating the servo
+    delay(5); // delay for smoothness
+    Serial.println("FIRING ALL");
+}
+
+void homeServos(){
+    yawServo.write(yawStopSpeed); //setup YAW servo to be STOPPED (90)
+    delay(20);
+    rollServo.write(rollStopSpeed); //setup ROLL servo to be STOPPED (90)
+    delay(100);
+    pitchServo.write(100); //set PITCH servo to 100 degree position
+    delay(100);
+    pitchServoVal = 100; // store the pitch servo value
+    Serial.println("HOMING");
 }
 
 void checkPasscode() {
@@ -183,22 +305,10 @@ void checkPasscode() {
     passcode[0] = '\0'; // Reset passcode buffer
 }
 
-
-
-void addPasscodeDigit(char digit) {
-    if (!passcodeEntered && digit >= '0' && digit <= '9' && strlen(passcode) < PASSCODE_LENGTH) {
-        strncat(passcode, &digit, 1); //adds a digit to the passcode
-        Serial.println(passcode); //print the passcode to Serial
-    } else if (strlen(passcode) > PASSCODE_LENGTH+1){
-      passcode[0] = NULL; // Reset passcode buffer
-      Serial.println(passcode);
-    }
-}
-
 void handleCommand(int command) {
     if((IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT) && !passcodeEntered){ // this checks to see if the command is a repeat
-    Serial.println("DEBOUNCING REPEATED NUMBER - IGNORING INPUT");
-    return; //discarding the repeated numbers prevent you from accidentally inputting a number twice
+        Serial.println("DEBOUNCING REPEATED NUMBER - IGNORING INPUT");
+        return; //discarding the repeated numbers prevent you from accidentally inputting a number twice
     }
 
     switch (command) {
@@ -329,124 +439,15 @@ void handleCommand(int command) {
 
         default:
             // Unknown command, do nothing
-            Serial.println("Command Read Failed or Unknown, Try Again");
+            Serial.print(command);
+            Serial.println(" command unknown. Command Read Failed or Unknown, Try Again");
             break;
     }
+
     if (strlen(passcode) == PASSCODE_LENGTH){
         checkPasscode();
     }
 }
 
-
-void shakeHeadYes(int moves = 3) {
-      Serial.println("YES");
-    int startAngle = pitchServoVal; // Current position of the pitch servo
-    int lastAngle = pitchServoVal;
-    int nodAngle = startAngle + 20; // Angle for nodding motion
-
-    for (int i = 0; i < moves; i++) { // Repeat nodding motion three times
-        // Nod up
-        for (int angle = startAngle; angle <= nodAngle; angle++) {
-            pitchServo.write(angle);
-            delay(7); // Adjust delay for smoother motion
-        }
-        delay(50); // Pause at nodding position
-        // Nod down
-        for (int angle = nodAngle; angle >= startAngle; angle--) {
-            pitchServo.write(angle);
-            delay(7); // Adjust delay for smoother motion
-        }
-        delay(50); // Pause at starting position
-    }
-}
-
-void shakeHeadNo(int moves = 3) {
-    Serial.println("NO");
-    int startAngle = pitchServoVal; // Current position of the pitch servo
-    int lastAngle = pitchServoVal;
-    int nodAngle = startAngle + 60; // Angle for nodding motion
-
-    for (int i = 0; i < moves; i++) { // Repeat nodding motion three times
-        // rotate right, stop, then rotate left, stop
-        yawServo.write(140);
-        delay(190); // Adjust delay for smoother motion
-        yawServo.write(yawStopSpeed);
-        delay(50);
-        yawServo.write(40);
-        delay(190); // Adjust delay for smoother motion
-        yawServo.write(yawStopSpeed);
-        delay(50); // Pause at starting position
-    }
-}
-
-void leftMove(int moves){
-    for (int i = 0; i < moves; i++){
-        yawServo.write(yawStopSpeed + yawMoveSpeed); // adding the servo speed = 180 (full counterclockwise rotation speed)
-        delay(yawPrecision); // stay rotating for a certain number of milliseconds
-        yawServo.write(yawStopSpeed); // stop rotating
-        delay(5); //delay for smoothness
-        Serial.println("LEFT");
-  }
-
-}
-
-void rightMove(int moves){ // function to move right
-  for (int i = 0; i < moves; i++){
-      yawServo.write(yawStopSpeed - yawMoveSpeed); //subtracting the servo speed = 0 (full clockwise rotation speed)
-      delay(yawPrecision);
-      yawServo.write(yawStopSpeed);
-      delay(5);
-      Serial.println("RIGHT");
-  }
-}
-
-void upMove(int moves){
-  for (int i = 0; i < moves; i++){
-      if(pitchServoVal > pitchMin){//make sure the servo is within rotation limits (greater than 10 degrees by default)
-        pitchServoVal = pitchServoVal - pitchMoveSpeed; //decrement the current angle and update
-        pitchServo.write(pitchServoVal);
-        delay(50);
-        Serial.println("UP");
-      }
-  }
-}
-
-void downMove (int moves){
-  for (int i = 0; i < moves; i++){
-        if(pitchServoVal < pitchMax){ //make sure the servo is within rotation limits (less than 175 degrees by default)
-        pitchServoVal = pitchServoVal + pitchMoveSpeed;//increment the current angle and update
-        pitchServo.write(pitchServoVal);
-        delay(50);
-        Serial.println("DOWN");
-      }
-  }
-}
-
-void fire() { //function for firing a single dart
-    rollServo.write(rollStopSpeed + rollMoveSpeed);//start rotating the servo
-    delay(rollPrecision);//time for approximately 60 degrees of rotation
-    rollServo.write(rollStopSpeed);//stop rotating the servo
-    delay(5); //delay for smoothness
-    Serial.println("FIRING");
-}
-
-void fireAll() { //function to fire all 6 darts at once
-    rollServo.write(rollStopSpeed + rollMoveSpeed);//start rotating the servo
-    delay(rollPrecision * 6); //time for 360 degrees of rotation
-    rollServo.write(rollStopSpeed);//stop rotating the servo
-    delay(5); // delay for smoothness
-    Serial.println("FIRING ALL");
-}
-
-void homeServos(){
-    yawServo.write(yawStopSpeed); //setup YAW servo to be STOPPED (90)
-    delay(20);
-    rollServo.write(rollStopSpeed); //setup ROLL servo to be STOPPED (90)
-    delay(100);
-    pitchServo.write(100); //set PITCH servo to 100 degree position
-    delay(100);
-    pitchServoVal = 100; // store the pitch servo value
-    Serial.println("HOMING");
-}
 
   
