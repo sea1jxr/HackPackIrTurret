@@ -2,6 +2,13 @@
 
 #include "Defines.h"
 
+void initializeDistanceSensor()
+{
+    // Define inputs and outputs
+    pinMode(trigPin, OUTPUT);
+    pinMode(echoPin, INPUT);
+}
+
 float getDistanceInInches()
 {
     long durationInMicroseconds;

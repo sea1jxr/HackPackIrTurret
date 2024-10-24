@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
-#include "Defines.h"
 #include "TurretActions.h"
 #include "IRremote.h"
+#include "DistanceUtilities.h"
 
 //////////////////////////////////////////////////
 //  S E T U P  //
@@ -13,9 +13,7 @@ void setup()
 
     initializeServos();
 
-    // Define inputs and outputs
-    pinMode(trigPin, OUTPUT);
-    pinMode(echoPin, INPUT);
+    initializeDistanceSensor();
 
     // Just to know which program is running on my microcontroller
     Serial.println(F("START " __FILE__ " from " __DATE__ " @ " __TIME__));

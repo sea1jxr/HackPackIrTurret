@@ -1,1 +1,2 @@
 float getDistanceInInches();
+void initializeDistanceSensor();
