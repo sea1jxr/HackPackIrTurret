@@ -6,7 +6,6 @@
 
 char passcode[PASSCODE_LENGTH + 1] = ""; // Buffer to store user input passcode
 bool passcodeEntered = false;            // Flag to indicate if passcode has been entered correctly
-bool inSentryMode = false;
 
 void addPasscodeDigit(char digit)
 {

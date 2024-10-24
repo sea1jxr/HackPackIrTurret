@@ -9,6 +9,8 @@
 #include "TurretActions.h"
 #include "Passcode.h"
 
+bool inSentryMode = false;
+
 void handleCommand(int command)
 {
     if (isIrRemoteRepeat() && !passcodeEntered)
