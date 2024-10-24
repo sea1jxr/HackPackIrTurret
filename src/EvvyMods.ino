@@ -1,3 +1,6 @@
+#define STRING_HELPER(s) #s
+#define STRING(s) STRING_HELPER(s)
+
 #define PASSCODE_LENGTH 4
 #define CORRECT_PASSCODE "1234" // Change this to your desired passcode
 
@@ -10,7 +13,6 @@ bool inSentryMode = false;
 //////////////////////////////////////////////////
 #include <Arduino.h>
 #include <Servo.h>
-#include "PinDefinitionsAndMore.h" // Define macros for input and output pin etc.
 #include <IRremote.hpp>
 
 #define DECODE_NEC  //defines the type of IR transmission to decode based on the remote. See IRremote library for examples on how to decode other types of remote
@@ -43,6 +45,13 @@ bool inSentryMode = false;
 #define star 0x16
 #define hashtag 0xD
 
+#define echoPin 7
+#define trigPin 8
+#define irPin 9
+#define yawPin 10
+#define pitchPin 11
+#define rollPin 12
+
 //////////////////////////////////////////////////
           //  PINS AND PARAMETERS  //
 //////////////////////////////////////////////////
@@ -52,7 +61,7 @@ Servo rollServo; //names the servo responsible for ROLL rotation, spins the barr
 
 
  //initialize variables to store the current value of each servo
- int yawServoVal = 90;
+int yawServoVal = 90;
 int pitchServoVal = 100;
 int rollServoVal = 90;
 
@@ -73,18 +82,15 @@ int rollPrecision = 158; // this variable represents the time in milliseconds th
 int pitchMax = 175; // this sets the maximum angle of the pitch servo to prevent it from crashing, it should remain below 180, and be greater than the pitchMin
 int pitchMin = 10; // this sets the minimum angle of the pitch servo to prevent it from crashing, it should remain above 0, and be less than the pitchMax
 
-int trigPin = 8;    // Trigger
-int echoPin = 7;    // Echo
-
 //////////////////////////////////////////////////
                 //  S E T U P  //
 //////////////////////////////////////////////////
 void setup() {
     Serial.begin(9600); // initializes the Serial communication between the computer and the microcontroller
 
-    yawServo.attach(10); //attach YAW servo to pin 10
-    pitchServo.attach(11); //attach PITCH servo to pin 11
-    rollServo.attach(12); //attach ROLL servo to pin 12
+    yawServo.attach(yawPin);
+    pitchServo.attach(pitchPin);
+    rollServo.attach(rollPin);
 
     //Define inputs and outputs
     pinMode(trigPin, OUTPUT);
@@ -94,12 +100,11 @@ void setup() {
     Serial.println(F("START " __FILE__ " from " __DATE__ "\r\nUsing library version " VERSION_IRREMOTE));
 
     // Start the receiver and if not 3. parameter specified, take LED_BUILTIN pin from the internal boards definition as default feedback LED
-    IrReceiver.begin(9, ENABLE_LED_FEEDBACK);
+    IrReceiver.begin(irPin, ENABLE_LED_FEEDBACK);
 
     Serial.print(F("Ready to receive IR signals of protocols: "));
     printActiveIRProtocols(&Serial);
-    Serial.println(F("at pin " STR(9)));
-
+    Serial.println(F("at pin " STRING(irPin)));
 
     homeServos(); //set servo motors to home position
 }
@@ -174,15 +179,14 @@ void addPasscodeDigit(char digit) {
         strncat(passcode, &digit, 1); //adds a digit to the passcode
         Serial.println(passcode); //print the passcode to Serial
     } else if (strlen(passcode) > PASSCODE_LENGTH+1){
-      passcode[0] = NULL; // Reset passcode buffer
+      passcode[0] = '\0'; // Reset passcode buffer
       Serial.println(passcode);
     }
 }
 
-void shakeHeadYes(int moves = 3) {
+void nodHeadYes(int moves = 3) {
       Serial.println("YES");
     int startAngle = pitchServoVal; // Current position of the pitch servo
-    int lastAngle = pitchServoVal;
     int nodAngle = startAngle + 20; // Angle for nodding motion
 
     for (int i = 0; i < moves; i++) { // Repeat nodding motion three times
@@ -203,9 +207,6 @@ void shakeHeadYes(int moves = 3) {
 
 void shakeHeadNo(int moves = 3) {
     Serial.println("NO");
-    int startAngle = pitchServoVal; // Current position of the pitch servo
-    int lastAngle = pitchServoVal;
-    int nodAngle = startAngle + 60; // Angle for nodding motion
 
     for (int i = 0; i < moves; i++) { // Repeat nodding motion three times
         // rotate right, stop, then rotate left, stop
@@ -295,7 +296,7 @@ void checkPasscode() {
         // Correct passcode entered, shake head yes
         Serial.println("CORRECT PASSCODE");
         passcodeEntered = true;
-        shakeHeadYes();
+        nodHeadYes();
     } else {
         // Incorrect passcode entered, shake head no
         passcodeEntered = false;
@@ -362,9 +363,9 @@ void handleCommand(int command) {
             Serial.println("LOCKING");
             // Return to locked mode
             passcodeEntered = false;
-            passcode[0] = NULL; // Reset passcode buffer
+            passcode[0] = '\0'; // Reset passcode buffer
 
-            shakeHeadYes(1);
+            nodHeadYes(1);
 
             break;
 
@@ -373,7 +374,7 @@ void handleCommand(int command) {
             if (inSentryMode) {
               shakeHeadNo();
             } else {
-              shakeHeadYes(1);
+              nodHeadYes(1);
             }
             break;
             
