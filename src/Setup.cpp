@@ -2,6 +2,7 @@
 
 #include "Defines.h"
 #include "EvvyMods.h"
+#include "TurretActions.h"
 
 //////////////////////////////////////////////////
 //  S E T U P  //
@@ -10,9 +11,7 @@ void setup()
 {
     Serial.begin(9600); // initializes the Serial communication between the computer and the microcontroller
 
-    yawServo.attach(yawPin);
-    pitchServo.attach(pitchPin);
-    rollServo.attach(rollPin);
+    initializeServos();
 
     // Define inputs and outputs
     pinMode(trigPin, OUTPUT);

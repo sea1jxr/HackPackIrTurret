@@ -1,7 +1,10 @@
+#define DECODE_NEC // defines the type of IR transmission to decode based on the remote. See IRremote library for examples on how to decode other types of remote
+
 #include <IRremote.hpp>
 
 #include "Defines.h"
 #include "EvvyMods.h"
+
 
 void InitializeIrReciever() {
     // Start the receiver and if not 3. parameter specified, take LED_BUILTIN pin from the internal boards definition as default feedback LED
