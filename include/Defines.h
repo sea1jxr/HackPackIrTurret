@@ -1,7 +1,7 @@
 #define STRING_HELPER(s) #s
 #define STRING(s) STRING_HELPER(s)
 
-#define PASSCODE_LENGTH 4
+#define MAX_PASSCODE_LENGTH 10
 #define CORRECT_PASSCODE "1234" // Change this to your desired passcode
 
 /*
@@ -32,9 +32,12 @@
 #define star 0x16
 #define hashtag 0xD
 
+#define screenClockPin 5
+#define screenDataPin 6
 #define echoPin 7
 #define trigPin 8
 #define irPin 9
 #define yawPin 10
 #define pitchPin 11
 #define rollPin 12
+
