@@ -161,3 +161,40 @@ void fireAll()
     delay(5);                                       // delay for smoothness
     Serial.println("FIRING ALL");
 }
+
+bool HandleIfMovementCommand(int command)
+{
+    switch (command)
+    {
+    case up:
+        // Handle up command
+        upMove(1);
+        break;
+
+    case down:
+        // Handle down command
+        downMove(1);
+        break;
+
+    case left:
+        // Handle left command
+        leftMove(1);
+        break;
+
+    case right:
+        // Handle right command
+        rightMove(1);
+        break;
+
+    case ok:
+        // Handle fire command
+        fire();
+        Serial.println("FIRE");
+        break;
+
+    default:
+        return false;
+    }
+
+    return true;
+}

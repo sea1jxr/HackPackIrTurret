@@ -18,9 +18,17 @@ void InitializeIrReciever() {
 
 void handleIrCommandIfAny() {
     if (IrReceiver.decode())
-    {                                                   // if we have recieved a comman this loop...
+    {                                                   // if we have recieved a command this loop...
         int command = IrReceiver.decodedIRData.command; // store it in a variable
         IrReceiver.resume();                            // Enable receiving of the next value
+        if (command == 0)
+        {
+            // we recieve the non command of 0 at random times with no button pushes
+            // so eat them
+            Serial.println("Zero command received, eating it...");
+            return;
+        }
+        
         handleCommand(command);                         // Handle the received command through switch statements
     }
 }

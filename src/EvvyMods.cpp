@@ -5,44 +5,44 @@
 
 #include "Defines.h"
 #include "EvvyMods.h"
-#include "IRRemote.h"
-#include "TurretActions.h"
+#include "States/ComeCloserState.h"
+#include "States/LockedState.h"
+#include "States/ManualState.h"
+#include "States/SwitchModeState.h"
 
-bool previousInputWasHashTag = false;
-bool switchModes = false;
+TurretState* turretState = new LockedState();
 
 void handleCommand(int command)
 {
-    turretState.HandleCommand(command);
+    Serial.print(command);
 
+    TurretState* newState = nullptr;
+
+    // Handle System wide commands
     switch (command)
     {
         case star:
-            turretState = LockedState();
-            break;
+            newState = new LockedState();
+        break;
 
         case hashtag:
-            if (previousInputWasHashTag)
-            {
-               switchModes = true; 
-            }
-            break;
-        
-        case cmd1:
-            if (switchModes)
-            {
-                turretState = ManualState();
-            }
-            break;
+            newState = new SwitchModeState();
+        break;
 
-        case cmd2:
-            if (switchModes)
-            {
-                turretState = ComeCloser();
-            }
+        default:
+            newState = nullptr;
             break;
     }
 
-    trr
+    if (newState == nullptr)
+    {
+        newState = turretState->HandleCommand(command);
+    }
+
+    if (newState != nullptr)
+    {
+        delete turretState;
+        turretState = newState;
+    }
 }
 

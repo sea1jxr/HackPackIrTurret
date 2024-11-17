@@ -1,2 +1,2 @@
-float getDistanceInInches();
+unsigned long getDistanceInInches();
 void initializeDistanceSensor();

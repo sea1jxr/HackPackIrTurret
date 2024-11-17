@@ -23,5 +23,6 @@ void setup()
 
     InitializeIrReciever();
 
-    homeServos(); // set servo motors to home position
+    // set servo motors to home position
+    homeServos();
 }

@@ -1,6 +1,7 @@
 #include "States\TurretState.h"
+#include "States\LockedState.h"
 
-extern TurretState turretState;
+extern TurretState* turretState;
 
 extern bool inSentryMode;
 
