@@ -12,6 +12,8 @@ class LockedState : public TurretState
         TurretState* HandleCommand(int command) override;
         void DoLoopWork(long loopCount) override;
         void DrawStateContent(U8G2* u8g2, int x, int y, int width) override;
+        bool IsLocked() override { return true; }
+
 
     private:
         bool AddPasscodeDigit(char digit);

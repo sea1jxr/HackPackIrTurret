@@ -26,8 +26,11 @@ void handleCommand(int command)
         break;
 
         case hashtag:
-            newState = new SwitchModeState();
-        break;
+            if (!turretState->IsLocked())
+            {
+                newState = new SwitchModeState();
+            }
+            break;
 
         default:
             newState = nullptr;
