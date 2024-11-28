@@ -25,10 +25,10 @@ void handleIrCommandIfAny() {
         {
             // we recieve the non command of 0 at random times with no button pushes
             // so eat them
-            Serial.println("Zero command received, eating it...");
+            Serial.println(F("Zero command received, eating it..."));
             return;
         }
-        
+
         handleCommand(command);                         // Handle the received command through switch statements
     }
 }

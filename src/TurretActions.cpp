@@ -46,12 +46,12 @@ void homeServos()
     pitchServo.write(100); // set PITCH servo to 100 degree position
     delay(100);
     pitchServoVal = 100; // store the pitch servo value
-    Serial.println("HOMING");
+    Serial.println(F("HOMING"));
 }
 
 void nodHeadYes(int moves = 3)
 {
-    Serial.println("YES");
+    Serial.println(F("YES"));
     int startAngle = pitchServoVal; // Current position of the pitch servo
     int nodAngle = startAngle + 20; // Angle for nodding motion
 
@@ -76,7 +76,7 @@ void nodHeadYes(int moves = 3)
 
 void shakeHeadNo(int moves = 3)
 {
-    Serial.println("NO");
+    Serial.println(F("NO"));
 
     for (int i = 0; i < moves; i++)
     { // Repeat nodding motion three times
@@ -100,7 +100,7 @@ void leftMove(int moves)
         delay(yawPrecision);                         // stay rotating for a certain number of milliseconds
         yawServo.write(yawStopSpeed);                // stop rotating
         delay(5);                                    // delay for smoothness
-        Serial.println("LEFT");
+        Serial.println(F("LEFT"));
     }
 }
 
@@ -112,7 +112,7 @@ void rightMove(int moves)
         delay(yawPrecision);
         yawServo.write(yawStopSpeed);
         delay(5);
-        Serial.println("RIGHT");
+        Serial.println(F("RIGHT"));
     }
 }
 
@@ -125,7 +125,7 @@ void upMove(int moves)
             pitchServoVal = pitchServoVal - pitchMoveSpeed; // decrement the current angle and update
             pitchServo.write(pitchServoVal);
             delay(50);
-            Serial.println("UP");
+            Serial.println(F("UP"));
         }
     }
 }
@@ -139,7 +139,7 @@ void downMove(int moves)
             pitchServoVal = pitchServoVal + pitchMoveSpeed; // increment the current angle and update
             pitchServo.write(pitchServoVal);
             delay(50);
-            Serial.println("DOWN");
+            Serial.println(F("DOWN"));
         }
     }
 }
@@ -150,7 +150,7 @@ void fire()
     delay(rollPrecision);                           // time for approximately 60 degrees of rotation
     rollServo.write(rollStopSpeed);                 // stop rotating the servo
     delay(5);                                       // delay for smoothness
-    Serial.println("FIRING");
+    Serial.println(F("FIRING"));
 }
 
 void fireAll()
@@ -159,7 +159,7 @@ void fireAll()
     delay(rollPrecision * 6);                       // time for 360 degrees of rotation
     rollServo.write(rollStopSpeed);                 // stop rotating the servo
     delay(5);                                       // delay for smoothness
-    Serial.println("FIRING ALL");
+    Serial.println(F("FIRING ALL"));
 }
 
 bool HandleIfMovementCommand(int command)
@@ -189,7 +189,7 @@ bool HandleIfMovementCommand(int command)
     case ok:
         // Handle fire command
         fire();
-        Serial.println("FIRE");
+        Serial.println(F("FIRE"));
         break;
 
     default:

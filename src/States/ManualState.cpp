@@ -4,9 +4,9 @@
 #include "TurretActions.h"
 #include "States\ManualState.h"
     
-const char * ManualState::GetStateName()    
+const __FlashStringHelper * ManualState::GetStateName()    
 {
-    return "Manual";
+    return F("Manual");
 }
 
 TurretState* ManualState::HandleCommand(int command)

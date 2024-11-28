@@ -2,7 +2,7 @@
 #define STRING(s) STRING_HELPER(s)
 
 #define MAX_PASSCODE_LENGTH 10
-#define CORRECT_PASSCODE "1234" // Change this to your desired passcode
+#define CORRECT_PASSCODE F("1234") // Change this to your desired passcode
 
 /*
 ** if you want to add other remotes (as long as they're on the same protocol above):

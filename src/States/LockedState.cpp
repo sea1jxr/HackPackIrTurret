@@ -6,9 +6,9 @@
 #include "States\LockedState.h"
 #include "States\ManualState.h"
 
-const char * LockedState::GetStateName()    
+const __FlashStringHelper * LockedState::GetStateName()    
 {
-    return "Locked";
+    return F("Locked");
 }
 
 TurretState* LockedState::HandleCommand(int command)
@@ -18,7 +18,7 @@ TurretState* LockedState::HandleCommand(int command)
 
     if (isIrRemoteRepeat())
     { // this checks to see if the command is a repeat
-        Serial.println("DEBOUNCING REPEATED NUMBER - IGNORING INPUT");
+        Serial.println(F("DEBOUNCING REPEATED NUMBER - IGNORING INPUT"));
         // discarding the repeated numbers prevent you from accidentally inputting a number twice
         return nullptr; 
     }
@@ -36,7 +36,7 @@ TurretState* LockedState::HandleCommand(int command)
     }
 
     Serial.print(command);
-    Serial.println(" command unknown. Command Read Failed or Unknown, Try Again");
+    Serial.println(F(" command unknown. Command Read Failed or Unknown, Try Again"));
     shakeHeadNo();
 
     return nullptr;
@@ -113,21 +113,21 @@ bool LockedState::AddPasscodeDigit(char digit)
 
 bool LockedState::checkPasscode()
 {
-    if (strlen(m_passcode) != strlen(CORRECT_PASSCODE))
+    if (strlen(m_passcode) != strlen(String(CORRECT_PASSCODE).c_str()))
     {
-        Serial.print("Current Passcode is '");
+        Serial.print(F("Current Passcode is '"));
         Serial.print(m_passcode);
-        Serial.println("'");
+        Serial.println(F("'"));
         return false;
     }
 
-    if (strcmp(m_passcode, CORRECT_PASSCODE) == 0)
+    if (strcmp(m_passcode, String(CORRECT_PASSCODE).c_str()) == 0)
     {
         // Correct passcode entered, shake head yes
-        Serial.println("CORRECT PASSCODE");
+        Serial.println(F("CORRECT PASSCODE"));
         return true;
     }
 
-    Serial.println("INCORRECT PASSCODE");
+    Serial.println(F("INCORRECT PASSCODE"));
     return false;
 }

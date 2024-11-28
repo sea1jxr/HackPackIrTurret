@@ -19,7 +19,7 @@ void setup()
     initializeDistanceSensor();
 
     // Just to know which program is running on my microcontroller
-    Serial.println(F("START " __FILE__ " from " __DATE__ " @ " __TIME__));
+    Serial.println(String(F("START ")) + __FILE__  + String(F(" from ")) + __DATE__ + String(F(" @ ")) + __TIME__);
 
     InitializeIrReciever();
 

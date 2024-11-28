@@ -8,7 +8,7 @@ class ComeCloserState : public TurretState
         ~ComeCloserState() {};
 
     public:
-        const char * GetStateName() override;    
+        const __FlashStringHelper * GetStateName() override;    
         TurretState* HandleCommand(int command) override;
         void DoLoopWork(long loopCount) override;
         void DrawStateContent(U8G2* u8g2, int x, int y, int width) override;

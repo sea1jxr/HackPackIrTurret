@@ -3,9 +3,9 @@
 #include "States\ManualState.h"
 #include "States\SwitchModeState.h"
     
-const char * SwitchModeState::GetStateName()    
+const __FlashStringHelper * SwitchModeState::GetStateName()    
 {
-    return "Switch";
+    return F("Switch");
 }
 
 TurretState* SwitchModeState::HandleCommand(int command)

@@ -34,13 +34,13 @@ long getDistanceInInches()
     durationInMicroseconds = pulseIn(echoPin, HIGH);
     //durationInMicroseconds = 33 * 74 * 2;
 
-    // Serial.print(durationInMicroseconds);
-    // Serial.println("micro seconds ");
+    Serial.print(durationInMicroseconds);
+    Serial.println(F("micro seconds "));
     // //return 31;
     
     if (durationInMicroseconds == 0)
     {
-        //Serial.print("durationInMicroseconds == 0");
+        //Serial.print(F("durationInMicroseconds == 0"));
         return 1000;
     }
     
@@ -54,9 +54,9 @@ long getDistanceInInches()
     // const double speedOfSoundIninchesPerMicrosecond = 0.0135;
     // inches = (durationInMicroseconds * speedOfSoundIninchesPerMicrosecond) / 2.0; 
 
-    // Serial.print("getDistanceInches ");
-    // Serial.print(inches);
-    // Serial.println("in ");
+    Serial.print(F("getDistanceInches "));
+    Serial.print(inches);
+    Serial.println(F("in "));
 
     return inches;
 }
